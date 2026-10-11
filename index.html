@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sonsuz Orman — ASCII MMORPG</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <header id="topbar">
+      <span id="logo-text">SONSUZ ORMAN</span>
+      <span class="srv-tag">[TR-1]</span>
+      <span id="online-count">Çevrimiçi: 1</span>
+      <span class="spacer"></span>
+      <button id="btn-sound" title="Ses aç/kapa">♪ ses: açık</button>
+      <span class="dim">F1: debug</span>
+    </header>
+
+    <main id="layout">
+      <section id="game-wrap">
+        <canvas id="game"></canvas>
+        <canvas id="minimap" width="150" height="150"></canvas>
+        <div id="debug" class="hidden"></div>
+      </section>
+
+      <aside id="side">
+        <div id="portrait-box">
+          <canvas id="portrait"></canvas>
+        </div>
+        <div id="stats">
+          <div id="stat-name">Şövalye</div>
+          <div class="stat-row"><span class="stat-label">Seviye</span><span id="stat-level">Sv 1</span></div>
+          <div class="bar-row">
+            <span class="bar-label">HP</span>
+            <div class="bar hp"><div id="hp-fill"></div></div>
+            <span id="hp-text" class="bar-num">20/20</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">XP</span>
+            <div class="bar xp"><div id="xp-fill"></div></div>
+            <span id="xp-text" class="bar-num">0/40</span>
+          </div>
+          <div id="stat-misc">
+            <span id="stat-kills">Kesim: 0</span>
+            <span id="stat-deaths">Ölüm: 0</span>
+          </div>
+        </div>
+        <div id="chat-box">
+          <div id="chat-title">SOHBET — Kanal: Orman</div>
+          <div id="chat-lines"></div>
+        </div>
+      </aside>
+    </main>
+
+    <footer id="controls">
+      WASD / Ok tuşları: hareket &nbsp;·&nbsp; SPACE: kılıç salla &nbsp;·&nbsp; F1: debug
+    </footer>
+  </div>
+
+  <div id="overlay-start" class="overlay">
+    <div class="overlay-card">
+      <pre id="start-logo" class="logo-font"></pre>
+      <p class="tagline">Elinde kılıcın, içinde ormanı... Sonsuz bir ASCII diyarında<br>şövalyelik seni bekliyor.</p>
+      <div class="start-form">
+        <label for="name-input">Şövalye adın:</label>
+        <input id="name-input" maxlength="14" autocomplete="off" spellcheck="false" placeholder="KaraKılıç">
+      </div>
+      <button id="btn-start">MACERAYA BAŞLA</button>
+      <p class="hint" id="start-hint">Sunucu: TR-1 · Orman kanalı · Kayıt tarayıcında saklanır</p>
+    </div>
+  </div>
+
+  <div id="overlay-death" class="overlay hidden">
+    <div class="overlay-card">
+      <pre id="death-logo" class="logo-font death-logo"></pre>
+      <p id="death-info"></p>
+      <button id="btn-respawn">YENİDEN DOĞ</button>
+      <p class="hint"><a href="#" id="reset-save">kaydı sıfırla</a></p>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
