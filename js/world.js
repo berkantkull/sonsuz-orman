@@ -1,38 +1,32 @@
-// world.js — sonsuz prosedürel orman: chunk üretimi, tile sorguları, zorluk bantları.
-// Entity'den habersizdir; sadece dünya verisi.
+// world.js — sonsuz prosedürel orman: chunk üretimi, tile sınıflandırması,
+// görsel varyantlar ve zorluk bantları. Entity'den habersizdir.
+//
+// Gerçekçilik yaklaşımı: hücreler yalnız glif değil, DOLU ARKA PLAN rengi
+// taşır. Orman, siyah zemin üstüne saçılmış harfler değil; kesintisiz bir
+// renk dokusu (kanopi, su, toprak) olarak görünür.
 
 import { CONFIG } from './config.js';
 import { hash2, hash2i, fbm } from './rng.js';
 
 export const T = {
-  GRASS_A: 0, GRASS_B: 1, GRASS_C: 2, TALL: 3, TREE: 4, WATER_A: 5, WATER_B: 6, ROCK: 7, PATH: 8,
+  GRASS: 0, TALL: 1, TREE: 2, WATER: 3, ROCK: 4, PATH: 5,
 };
 
-// Glif + renk + geçilebilirlik. Render bu tabloyu kullanır.
+// Temel türler — yalnız geçilebilirlik. Görsel tileVisual()'dan gelir.
 export const TILES = [
-  { glyph: '.', color: '#233d1e', passable: true },   // GRASS_A
-  { glyph: ',', color: '#1d351a', passable: true },   // GRASS_B
-  { glyph: '.', color: '#2a4724', passable: true },   // GRASS_C
-  { glyph: '"', color: '#3f7a35', passable: true },   // uzun ot (kozmetik)
-  { glyph: 'Y', color: '#3fae53', passable: false },  // ağaç
-  { glyph: '~', color: '#2b6a9e', passable: false },  // su
-  { glyph: '~', color: '#3577ad', passable: false },  // su (parlak varyant)
-  { glyph: '^', color: '#8f9490', passable: false },  // kaya
-  { glyph: '·', color: '#8a6f4a', passable: true },   // patika
+  { passable: true },   // GRASS
+  { passable: true },   // TALL
+  { passable: false },  // TREE
+  { passable: false },  // WATER
+  { passable: false },  // ROCK
+  { passable: true },   // PATH
 ];
 
 const chunks = new Map();
 const key = (cx, cy) => cx + ',' + cy;
 
-function grassVariant(x, y) {
-  const shade = fbm(x * 0.11, y * 0.11, CONFIG.WORLD_SEED ^ 0x9E21, 2);
-  const dotted = hash2(x, y, CONFIG.WORLD_SEED ^ 0x00FF) < 0.5;
-  if (shade < 0.4) return dotted ? T.GRASS_B : T.GRASS_A;
-  if (shade > 0.62) return dotted ? T.GRASS_A : T.GRASS_C;
-  return dotted ? T.GRASS_C : T.GRASS_B;
-}
-
-function genTile(x, y) {
+// Saf sınıflandırıcı: koordinat → temel tür (varyantsız).
+function classify(x, y) {
   const S = CONFIG.WORLD_SEED;
   const dist = Math.sqrt(x * x + y * y);
 
@@ -41,19 +35,19 @@ function genTile(x, y) {
     const onCross = (Math.abs(x) <= 4 && Math.abs(y) <= 1) || (Math.abs(y) <= 4 && Math.abs(x) <= 1);
     if (onCross) return T.PATH;
     if (dist >= 4 && hash2(x, y, S ^ 0xABCD) < 0.02) return T.TREE;
-    return grassVariant(x, y);
+    return T.GRASS;
   }
 
   const treeN = fbm(x * 0.09, y * 0.09, S, 3);
   const waterN = fbm(x * 0.05, y * 0.028, S ^ 0x55AA, 2);   // y ekseninde ezik → yatay göller
   const pathN = fbm(x * 0.045, y * 0.045, S ^ 0x1234, 2);
 
-  if (waterN < 0.30) return hash2(x, y, S ^ 0x0BB5) < 0.35 ? T.WATER_B : T.WATER_A;
+  if (waterN < 0.30) return T.WATER;
   if (Math.abs(pathN - 0.5) < 0.016) return T.PATH;
   if (treeN > 0.60) return T.TREE;
   if (hash2(x, y, S ^ 0x7777) < 0.015) return T.ROCK;
-  if (treeN > 0.48 && treeN <= 0.58) return T.TALL;
-  return grassVariant(x, y);
+  if (treeN > 0.48) return T.TALL;
+  return T.GRASS;
 }
 
 function generateChunk(cx, cy) {
@@ -61,7 +55,7 @@ function generateChunk(cx, cy) {
   const tiles = new Uint8Array(size * size);
   for (let ly = 0; ly < size; ly++) {
     for (let lx = 0; lx < size; lx++) {
-      tiles[ly * size + lx] = genTile(cx * size + lx, cy * size + ly);
+      tiles[ly * size + lx] = classify(cx * size + lx, cy * size + ly);
     }
   }
   return { cx, cy, tiles, canvas: null };
@@ -86,6 +80,50 @@ export function getTile(x, y) {
 
 export function isPassable(x, y) {
   return TILES[getTile(x, y)].passable;
+}
+
+// --- Görsel katman ---
+// Deterministik varyant: aynı hücre her zaman aynı görünür.
+
+const GRASS_BG = ['#0f1d0d', '#12210e', '#0d190c'];
+const GRASS_FG = ['#2b4a23', '#33552a', '#243f1e'];
+const TREE_FG = ['#2e8f3e', '#43a84f', '#5cbf62'];
+const WATER_BG = ['#0f3050', '#123a5c'];
+const TREE_BG = '#0d2412';
+
+export function tileVisual(x, y, base) {
+  const h = hash2(x, y, CONFIG.WORLD_SEED ^ 0x0DDB);
+
+  if (base === T.GRASS || base === T.TALL) {
+    const shade = fbm(x * 0.11, y * 0.11, CONFIG.WORLD_SEED ^ 0x9E21, 2);
+    const v = shade < 0.42 ? 0 : shade > 0.62 ? 2 : 1;
+    if (base === T.TALL) return { ch: '"', fg: '#3f8f3a', bg: GRASS_BG[v] };
+    if (h < 0.10) return { ch: ',', fg: GRASS_FG[v], bg: GRASS_BG[v] };
+    if (h < 0.17) return { ch: '\'', fg: GRASS_FG[v], bg: GRASS_BG[v] };
+    return { ch: '', fg: GRASS_FG[v], bg: GRASS_BG[v] };
+  }
+
+  if (base === T.TREE) {
+    return { ch: h < 0.5 ? '♠' : '♣', fg: TREE_FG[Math.floor(h * 6) % 3], bg: TREE_BG };
+  }
+
+  if (base === T.WATER) {
+    // Kıyı köpüğü: kara komşusu olan su hücresi
+    const shore = classify(x + 1, y) !== T.WATER || classify(x - 1, y) !== T.WATER ||
+                  classify(x, y + 1) !== T.WATER || classify(x, y - 1) !== T.WATER;
+    if (shore) return { ch: '≈', fg: '#8fd0ea', bg: '#1b4a6e' };
+    if (h < 0.10) return { ch: '≈', fg: '#4a86b8', bg: WATER_BG[Math.floor(h * 10) % 2] };
+    return { ch: '', fg: '#4a86b8', bg: WATER_BG[Math.floor(h * 10) % 2] };
+  }
+
+  if (base === T.ROCK) {
+    return { ch: '▲', fg: h < 0.4 ? '#9aa2aa' : '#848d95', bg: '#20262b' };
+  }
+
+  // PATH
+  if (h < 0.30) return { ch: '·', fg: '#6b543a', bg: '#292014' };
+  if (h < 0.36) return { ch: ',', fg: '#5a452c', bg: '#292014' };
+  return { ch: '', fg: '#6b543a', bg: '#292014' };
 }
 
 // Kameradan çok uzak chunk'ları at (yeniden üretim ucuz, deterministik).

@@ -39,17 +39,47 @@ export class UI {
   // --- Portre ---
 
   initPortrait() {
-    const cv = $('portrait');
     const probe = document.createElement('canvas').getContext('2d');
     probe.font = `${CONFIG.PORTRAIT_FONT_SIZE}px ${CONFIG.FONT_STACK}`;
     this.pCellW = Math.ceil(probe.measureText('M').width);
     this.pCellH = Math.ceil(CONFIG.PORTRAIT_FONT_SIZE * 1.3);
     this.pDpr = Math.min(window.devicePixelRatio || 1, 2);
-    cv.style.width = PORTRAIT.width * this.pCellW + 'px';
-    cv.style.height = PORTRAIT.height * this.pCellH + 'px';
-    cv.width = Math.round(PORTRAIT.width * this.pCellW * this.pDpr);
-    cv.height = Math.round(PORTRAIT.height * this.pCellH * this.pDpr);
-    this.pctx = cv.getContext('2d');
+    for (const id of ['portrait', 'start-portrait']) {
+      const cv = $(id);
+      if (!cv) continue;
+      cv.style.width = PORTRAIT.width * this.pCellW + 'px';
+      cv.style.height = PORTRAIT.height * this.pCellH + 'px';
+      cv.width = Math.round(PORTRAIT.width * this.pCellW * this.pDpr);
+      cv.height = Math.round(PORTRAIT.height * this.pCellH * this.pDpr);
+      if (id === 'portrait') this.pctx = cv.getContext('2d');
+      else this.sctx = cv.getContext('2d');
+    }
+    this.lastFrameKey = '';
+    this.lastStartKey = '';
+  }
+
+  // Ortak portre boyaması: orman havasında zemin + karakter
+  paintPortrait(ctx, frame) {
+    const W = PORTRAIT.width, H = PORTRAIT.height;
+    const cw = this.pCellW * this.pDpr, chh = this.pCellH * this.pDpr;
+    // Zemin: yukarıdan aşağı koyulaşan orman havası
+    const grad = ctx.createLinearGradient(0, 0, 0, H * chh);
+    grad.addColorStop(0, '#0b1710');
+    grad.addColorStop(0.72, '#0a130c');
+    grad.addColorStop(1, '#08100a');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W * cw, H * chh);
+    ctx.font = `${Math.round(CONFIG.PORTRAIT_FONT_SIZE * this.pDpr)}px ${CONFIG.FONT_STACK}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let r = 0; r < H; r++) {
+      for (let c = 0; c < W; c++) {
+        const ch = frame.rows[r][c];
+        if (ch === ' ') continue;
+        ctx.fillStyle = frame.colors[r][c] || '#c9d2da';
+        ctx.fillText(ch, (c + 0.5) * cw, (r + 0.5) * chh);
+      }
+    }
   }
 
   drawPortrait(state) {
@@ -68,23 +98,18 @@ export class UI {
     const key = anim + idx;
     if (key === this.lastFrameKey) return;
     this.lastFrameKey = key;
+    this.paintPortrait(this.pctx, PORTRAIT.frames[anim][idx]);
+  }
 
-    const ctx = this.pctx;
-    const W = PORTRAIT.width, H = PORTRAIT.height;
-    ctx.fillStyle = '#08120a';
-    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    ctx.font = `${Math.round(CONFIG.PORTRAIT_FONT_SIZE * this.pDpr)}px ${CONFIG.FONT_STACK}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const frame = PORTRAIT.frames[anim][idx];
-    for (let r = 0; r < H; r++) {
-      for (let c = 0; c < W; c++) {
-        const ch = frame.rows[r][c];
-        if (ch === ' ') continue;
-        ctx.fillStyle = frame.colors[r][c] || '#c9d2da';
-        ctx.fillText(ch, (c + 0.5) * this.pCellW * this.pDpr, (r + 0.5) * this.pCellH * this.pDpr);
-      }
-    }
+  // Başlangıç ekranı: sakin nefes alan şövalye
+  drawStartPortrait() {
+    if (!this.sctx) return;
+    const t = performance.now() / 1000;
+    const idx = Math.floor(t * 1000 / PORTRAIT.timings.idle) % 2;
+    const key = 'i' + idx;
+    if (key === this.lastStartKey) return;
+    this.lastStartKey = key;
+    this.paintPortrait(this.sctx, PORTRAIT.frames.idle[idx]);
   }
 
   // --- HUD ---

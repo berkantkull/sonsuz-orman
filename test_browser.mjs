@@ -11,6 +11,7 @@ function makeCtx() {
     get(t, k) {
       if (k === 'measureText') return () => ({ width: 9.6 });
       if (k === 'canvas') return { width: 300, height: 150 };
+      if (k === 'createLinearGradient') return () => ({ addColorStop() {} });
       if (!(k in t)) t[k] = () => undefined;
       return t[k];
     },
@@ -42,7 +43,7 @@ function makeEl(id) {
 }
 
 globalThis.document = {
-  getElementById: (id) => elements[id] || (elements[id] = (id === 'game' || id === 'minimap' || id === 'portrait' ? makeCanvasEl() : makeEl(id))),
+  getElementById: (id) => elements[id] || (elements[id] = (id === 'game' || id === 'minimap' || id === 'portrait' || id === 'start-portrait' ? makeCanvasEl() : makeEl(id))),
   createElement: (tag) => (tag === 'canvas' ? makeCanvasEl() : makeEl('dyn-' + tag)),
   addEventListener() {},
   fonts: { ready: Promise.resolve() },

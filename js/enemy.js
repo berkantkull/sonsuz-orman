@@ -5,10 +5,10 @@ import { CONFIG } from './config.js';
 import { makeEntity, tryMove } from './entities.js';
 
 export const ENEMY_TYPES = {
-  goblin: { name: 'Goblin', glyph: 'g', color: '#8fce3a', hp: 12, dmg: 3, xp: 8, speed: 2.6 },
-  wolf:   { name: 'Kurt',   glyph: 'k', color: '#c8c8c8', hp: 8,  dmg: 2, xp: 5, speed: 4.0 },
-  slime:  { name: 'Slime',  glyph: 's', color: '#d877e0', hp: 20, dmg: 1, xp: 10, speed: 1.4 },
-  troll:  { name: 'Troll',  glyph: 'T', color: '#ff6347', hp: 60, dmg: 8, xp: 50, speed: 2.0, elite: true },
+  goblin: { name: 'Goblin', glyph: 'g', color: '#a4e34a', hp: 12, dmg: 3, xp: 8, speed: 2.6 },
+  wolf:   { name: 'Kurt',   glyph: 'k', color: '#e0e0e0', hp: 8,  dmg: 2, xp: 5, speed: 4.0 },
+  slime:  { name: 'Slime',  glyph: 's', color: '#ea90f2', hp: 20, dmg: 1, xp: 10, speed: 1.4 },
+  troll:  { name: 'Troll',  glyph: 'T', color: '#ff5040', hp: 60, dmg: 8, xp: 50, speed: 2.0, elite: true },
 };
 
 export function makeEnemy(typeKey, x, y, level) {
@@ -24,6 +24,7 @@ export function makeEnemy(typeKey, x, y, level) {
   e.xpValue = t.xp;
   e.speed = t.speed;
   e.elite = !!t.elite;
+  e.glyphBg = 'rgba(8, 12, 6, 0.42)';   // terrain üstünde okunabilirlik zeminı
   e.homeX = x;
   e.homeY = y;
   e.state = 'idle';

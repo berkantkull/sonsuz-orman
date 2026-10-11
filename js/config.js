@@ -8,7 +8,7 @@ export const CONFIG = {
 
   FONT_SIZE: 16,
   FONT_STACK: '"Cascadia Mono", Consolas, Menlo, "DejaVu Sans Mono", "Courier New", monospace',
-  PORTRAIT_FONT_SIZE: 12,
+  PORTRAIT_FONT_SIZE: 13,
 
   WORLD_SEED: 20261011,
   SAFE_RADIUS: 12,        // spawn çevresi: su yok, seyrek ağaç

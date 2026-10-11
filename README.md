@@ -11,6 +11,9 @@ https://berkantkull.github.io/sonsuz-orman/
 
 - **Sonsuz dünya**: Deterministik hash + fBm gürültüsüyle üretilen orman;
   aynı seed'de herkes aynı ormanı görür. Ağaçlar, göller, patikalar, kayalar.
+- **Dolu arka planlı terrain**: Hücreler yalnız glif değil kesintisiz renk
+  dokusu taşır — kanopi, dalgalı su (kıyı köpüğü + ışıltı), toprak patikalar;
+  ormanda süzülen ateşböcekleri, adım tozu ve ekran vinyeti.
 - **ASCII render motoru**: Canvas 2D üzerinde glyph atlası + chunk zemin
   cache'i — 100×40 hücrelik grid 60fps'te akar.
 - **Gerçek zamanlı dövüş**: WASD/ok ile hareket, SPACE ile üç hücrelik yay

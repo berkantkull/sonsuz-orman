@@ -103,6 +103,17 @@ html, body {
 #game {
   background: var(--bg);
   box-shadow: 0 0 0 1px var(--border), 0 0 30px rgba(20, 60, 25, 0.25);
+  filter: saturate(1.15) contrast(1.06);
+}
+
+/* Kenar karartması — sahneye derinlik verir */
+#game-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  background: radial-gradient(ellipse at center, transparent 52%, rgba(0, 0, 0, 0.45) 100%);
 }
 
 #minimap {
@@ -276,18 +287,30 @@ html, body {
 .overlay.hidden, .hidden { display: none; }
 
 .overlay-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  max-width: 760px;
+  max-width: 96vw;
   padding: 20px;
 }
 
 .logo-font {
   font-family: var(--font);
-  font-size: clamp(8px, 1.55vw, 16px);
+  font-size: clamp(7px, 1.42vw, 15px);
   line-height: 1.15;
   color: var(--green);
   text-shadow: 0 0 12px rgba(63, 174, 83, 0.5);
   white-space: pre;
+  display: inline-block;
+  max-width: 100%;
+}
+
+#start-portrait {
+  margin: 14px 0 4px;
+  border: 1px solid var(--border-bright);
+  box-shadow: 0 0 24px rgba(20, 60, 25, 0.45);
+  background: #0a130c;
 }
 
 .death-logo {

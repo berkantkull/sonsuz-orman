@@ -21,7 +21,8 @@ export function makeNpcName(rand) {
 }
 
 export function makeNpc(x, y, name, level) {
-  const n = makeEntity('npc', x, y, '@', CONFIG.COLORS.npc);
+  const n = makeEntity('npc', x, y, '♘', CONFIG.COLORS.npc);
+  n.glyphBg = 'rgba(6, 12, 8, 0.38)';
   n.name = name;
   n.level = level;
   n.speed = 3.2 + Math.random() * 0.8;

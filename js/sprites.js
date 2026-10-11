@@ -18,6 +18,7 @@ const C = {
   blade: '#e9f3ff',
   boots: '#6b7480',
   spark: '#fff3b0',
+  ground: '#3a6a2f',
 };
 
 function builder() {
@@ -69,6 +70,14 @@ function torso(b, ox) {
   // Kemer + altın toka
   b.put(13, 3 + ox, '|____[_+_]____|', C.belt);
   b.put(13, 10 + ox, '+', C.gold);
+  // Sol kolda gövdeye yaslı heater kalkan (kızıl haçlı) — gövdeden SONRA
+  // çizilir, kenarı göğüs duvarının üstüne biner.
+  b.put(10, 1 + ox, '.___.', C.steel);
+  b.put(11, 0 + ox, '| + |', C.steel);
+  b.put(12, 0 + ox, '| + |', C.steel);
+  b.put(13, 1 + ox, '\\_/', C.steel);
+  b.put(11, 2 + ox, '+', C.plume);
+  b.put(12, 2 + ox, '+', C.plume);
 }
 
 function legsStanceA(b) {
@@ -129,11 +138,20 @@ function swordFollow(b) {
   b.put(15, 26, '*', C.spark);
 }
 
+// Zemin: tüm karelerde sabit duran ot tutamları ve iki çiçek — şövalye
+// animasyon yaparken ayaklarının altı sabit kalır.
+function ground(b) {
+  b.put(18, 2, ',  ,   "  , ,   "  ,', C.ground);
+  b.put(18, 5, '*', C.gold);
+  b.put(18, 16, '*', C.plume);
+}
+
 // --- Kareler ---
 
 function makeFrame(parts) {
   const b = builder();
   for (const p of parts) p(b);
+  ground(b);
   return b.frame();
 }
 

@@ -58,7 +58,7 @@ Object.assign(state, {
 // --- Oyuncu kurulumu ---
 
 function makePlayer(name, saved) {
-  const p = makeEntity('player', 0, 0, '@', CONFIG.COLORS.player);
+  const p = makeEntity('player', 0, 0, '♞', CONFIG.COLORS.player);
   p.name = name;
   p.level = saved && saved.level ? saved.level : 1;
   p.xpNext = CONFIG.XP_CURVE(p.level);
@@ -126,7 +126,12 @@ function update(dt) {
     }
     if (consumeAttack()) tryPlayerAttack(state);
   }
+  const wasMoving = p.moveT < 1;
   updateMovement(p, dt);
+  // Adım tamamlanınca ayağından toz kalkar
+  if (wasMoving && p.moveT >= 1 && state.phase === 'play') {
+    addEffect(state, { type: 'dmg', x: p.fromX, y: p.fromY, t: 0, dur: 0.45, text: '·', color: '#8a8a6a', rise: 0.3 });
+  }
 
   // Düşmanlar: yalnızca oyuncuya yakın olanlar düşünür
   for (const e of state.enemies) {
@@ -167,7 +172,10 @@ function frame(now) {
   requestAnimationFrame(frame);
   const rawDt = (now - lastFrameTime) / 1000;
   lastFrameTime = now;
-  if (state.phase === 'start') return;
+  if (state.phase === 'start') {
+    ui.drawStartPortrait();   // başlangıç ekranında şövalye nefes alır
+    return;
+  }
 
   // FPS ölçümü
   fpsAcc += rawDt; fpsCount++;
