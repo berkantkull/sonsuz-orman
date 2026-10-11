@@ -13,6 +13,7 @@
       <span class="srv-tag">[TR-1]</span>
       <span id="online-count">Çevrimiçi: 1</span>
       <span class="spacer"></span>
+      <button id="btn-guide" title="Oyun rehberi (H)">? rehber</button>
       <button id="btn-sound" title="Ses aç/kapa">♪ ses: açık</button>
       <span class="dim">F1: debug</span>
     </header>
@@ -46,6 +47,31 @@
             <span id="stat-deaths">Ölüm: 0</span>
           </div>
         </div>
+        <div id="skills">
+          <div class="skill" data-slot="0">
+            <span class="skill-key">1</span>
+            <span class="skill-name">Kalkan Darbesi</span>
+            <span class="skill-lock"></span>
+            <div class="skill-cd"></div>
+          </div>
+          <div class="skill" data-slot="1">
+            <span class="skill-key">2</span>
+            <span class="skill-name">Kasırga Kılıç</span>
+            <span class="skill-lock"></span>
+            <div class="skill-cd"></div>
+          </div>
+          <div class="skill" data-slot="2">
+            <span class="skill-key">3</span>
+            <span class="skill-name">Savaş Narası</span>
+            <span class="skill-lock"></span>
+            <div class="skill-cd"></div>
+          </div>
+        </div>
+        <div id="quest-box">
+          <div id="quest-title">GÖREV</div>
+          <div id="quest-name">—</div>
+          <div id="quest-progress">—</div>
+        </div>
         <div id="chat-box">
           <div id="chat-title">SOHBET — Kanal: Orman</div>
           <div id="chat-lines"></div>
@@ -54,7 +80,7 @@
     </main>
 
     <footer id="controls">
-      WASD / Ok tuşları: hareket &nbsp;·&nbsp; SPACE: kılıç salla &nbsp;·&nbsp; F1: debug
+      WASD/Ok: hareket · SPACE: kılıç · 1/2/3: yetenek · H: rehber
     </footer>
   </div>
 
@@ -64,11 +90,14 @@
       <canvas id="start-portrait"></canvas>
       <p class="tagline">Elinde kılıcın, içinde ormanı... Sonsuz bir ASCII diyarında<br>şövalyelik seni bekliyor.</p>
       <div class="start-form">
-        <label for="name-input">Şövalye adın:</label>
+        <label for="name-input">ŞÖVALYE ADIN</label>
         <input id="name-input" maxlength="14" autocomplete="off" spellcheck="false" placeholder="KaraKılıç">
       </div>
       <button id="btn-start">MACERAYA BAŞLA</button>
-      <p class="hint" id="start-hint">Sunucu: TR-1 · Orman kanalı · Kayıt tarayıcında saklanır</p>
+      <p class="hint">
+        <a href="#" class="open-guide">nasıl oynanır?</a>
+        &nbsp;·&nbsp; Sunucu: TR-1 · Kayıt tarayıcıda saklanır
+      </p>
     </div>
   </div>
 
@@ -78,6 +107,76 @@
       <p id="death-info"></p>
       <button id="btn-respawn">YENİDEN DOĞ</button>
       <p class="hint"><a href="#" id="reset-save">kaydı sıfırla</a></p>
+    </div>
+  </div>
+
+  <div id="overlay-guide" class="overlay hidden">
+    <div class="guide-card">
+      <h2 class="guide-h">OYUN REHBERİ</h2>
+
+      <section>
+        <h3>AMAÇ</h3>
+        <p>Sonsuz Orman'ın ortasındaki tapınak taşından (spawn) doğuyorsun. Görevleri
+        tamamla, seviye atla ve ormanın derinliklerine in. Spawn'dan uzaklaştıkça
+        düşmanlar güçlenir: her ~20 hücrede bir <em>zorluk bandı</em> biter, band 3'ün
+        ötesinde <strong>troller</strong> görünür. Ölüm kalıcı değil — spawn'da yeniden
+        doğarsın, yalnızca mevcut seviyenin ilerlemesinin %25'ini kaybedersin.
+        Oyunun sonu yok; amaç efsane olmaktır.</p>
+      </section>
+
+      <section>
+        <h3>KONTROLLER</h3>
+        <table class="guide-table">
+          <tr><td>W A S D / ok tuşları</td><td>hareket (4 yön)</td></tr>
+          <tr><td>SPACE</td><td>kılıç savur — bakılan yöndeki 3 hücreye vurur</td></tr>
+          <tr><td>1 / 2 / 3</td><td>yetenekler (aşağıda)</td></tr>
+          <tr><td>H</td><td>bu rehberi aç/kapat (oyun duraklar)</td></tr>
+          <tr><td>F1</td><td>debug bilgisi</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h3>YETENEKLER</h3>
+        <table class="guide-table">
+          <tr><td>1 · Kalkan Darbesi</td><td>Önündekilere hasar + 2 sn sersemletir. Sv 2'de açılır. (CD 8sn)</td></tr>
+          <tr><td>2 · Kasırga Kılıç</td><td>Çevrendeki 8 yöne aynı anda vurur. Sv 3'te açılır. (CD 12sn)</td></tr>
+          <tr><td>3 · Savaş Narası</td><td>8 sn boyunca tüm kılıç hasarı +%50. Sv 5'te açılır. (CD 25sn)</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h3>DÜŞMANLAR</h3>
+        <div class="enemy-row" data-type="goblin">
+          <pre class="enemy-sprite sprite-green"></pre>
+          <div><span class="enemy-name"></span><span class="enemy-note"></span></div>
+        </div>
+        <div class="enemy-row" data-type="wolf">
+          <pre class="enemy-sprite sprite-grey"></pre>
+          <div><span class="enemy-name"></span><span class="enemy-note"></span></div>
+        </div>
+        <div class="enemy-row" data-type="slime">
+          <pre class="enemy-sprite sprite-purple"></pre>
+          <div><span class="enemy-name"></span><span class="enemy-note"></span></div>
+        </div>
+        <div class="enemy-row" data-type="troll">
+          <pre class="enemy-sprite sprite-red"></pre>
+          <div><span class="enemy-name"></span><span class="enemy-note"></span></div>
+        </div>
+      </section>
+
+      <section>
+        <h3>IPUÇLARI</h3>
+        <ul class="tips">
+          <li>5 sn kimse sana vurmazsa canın yavaşça yenilenir.</li>
+          <li>Su geçilmez — gölleri kıyıdan dolaş; patikalar en güvenli yoldur.</li>
+          <li>Kurt sürüsüne yakalanırsan Kasırga Kılıç (2) kurtarır; trole karşı önce Savaş Narası (3) çek.</li>
+          <li>Kritik vuruşlar (<strong>*</strong> işaretli hasar) iki katı vurur.</li>
+          <li>Kestiğin düşman 30-60 sn sonra yerine döner; farm spotlarını öğren.</li>
+          <li>Cyan renkli isimli şövalyeler diğer "oyuncular"dır — sohbeti takip et, ipuçları düşer.</li>
+        </ul>
+      </section>
+
+      <button id="btn-guide-close">KAPAT (H)</button>
     </div>
   </div>
 

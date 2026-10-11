@@ -30,11 +30,12 @@ function makeCanvasEl() {
 function makeEl(id) {
   const el = {
     id, tagName: 'DIV', textContent: '', innerHTML: '', value: '',
-    style: {}, children: [], handlers: {},
+    style: {}, children: [], handlers: {}, dataset: {},
     classList: { add() {}, remove() {}, toggle() {} },
     addEventListener(type, fn) { el.handlers[type] = fn; },
     appendChild(c) { el.children.push(c); },
     removeChild(c) { const i = el.children.indexOf(c); if (i >= 0) el.children.splice(i, 1); },
+    querySelector(sel) { return (el['_q' + sel] = el['_q' + sel] || makeEl(id + '-' + sel)); },
     blur() {}, focus() {},
     scrollHeight: 0, scrollTop: 0, clientHeight: 0, clientWidth: 0,
   };
@@ -44,6 +45,7 @@ function makeEl(id) {
 
 globalThis.document = {
   getElementById: (id) => elements[id] || (elements[id] = (id === 'game' || id === 'minimap' || id === 'portrait' || id === 'start-portrait' ? makeCanvasEl() : makeEl(id))),
+  querySelectorAll: (sel) => (sel === '.skill' ? [makeEl('sk0'), makeEl('sk1'), makeEl('sk2')] : []),
   createElement: (tag) => (tag === 'canvas' ? makeCanvasEl() : makeEl('dyn-' + tag)),
   addEventListener() {},
   fonts: { ready: Promise.resolve() },
@@ -110,6 +112,45 @@ assert.strictEqual(state.player.x, 0, 'spawn noktasında');
 for (let i = 0; i < 1200; i++) { t += 16.7; globalThis.__raf(t); }
 console.log(`sim2: süre=${Math.round(state.playTime)}sn düşman=${state.enemies.length} efekt=${state.effects.length} hp=${state.player.hp}/${state.player.maxHp}`);
 assert.ok(state.playTime > 28, 'oyun saati akıyor');
+
+// Görev kutusu doldu mu
+assert.ok(elements['quest-name'].textContent.includes('İlk Kan'), 'görev adı görüntüleniyor');
+
+// Görev ilerlemesi: yakına zayıf goblin koy, ona dönüp kes
+const { spawnEnemyAt } = await import('./js/entities.js');
+let g1 = null;
+search: for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, -1], [-1, 1], [1, 1], [-1, -1]]) {
+  const cand = spawnEnemyAt(state, state.player.x + dx, state.player.y + dy, 'goblin', 1);
+  if (cand) {
+    g1 = cand;
+    state.player.facing = [Math.sign(dx), Math.sign(dy)];
+    break search;
+  }
+}
+assert.ok(g1, 'goblin yerleştirildi');
+g1.hp = 1; g1.atkCd = 99;
+state.player.attackT = 0;
+key(' ');
+for (let i = 0; i < 10; i++) { t += 16.7; globalThis.__raf(t); }
+assert.ok(elements['quest-progress'].textContent.includes('1/3'), `görev ilerledi: "${elements['quest-progress'].textContent}"`);
+
+// Yetenek: kilitliyken mesaj, açıkken bekleme süresi
+state.player.level = 5;
+key('2');
+for (let i = 0; i < 5; i++) { t += 16.7; globalThis.__raf(t); }
+assert.ok(state.player.skillCd[1] > 0, 'Kasırga Kılıç tetiklendi, CD başladı');
+key('3');
+for (let i = 0; i < 5; i++) { t += 16.7; globalThis.__raf(t); }
+assert.ok(state.player.buffT > 0, 'Savaş Narası buffı aktif');
+
+// Rehber: H açar, simülasyon donar, ESC kapatır
+key('h');
+assert.strictEqual(state.guideOpen, true, 'rehber açıldı');
+const tFrozen = state.time;
+for (let i = 0; i < 30; i++) { t += 16.7; globalThis.__raf(t); }
+assert.strictEqual(state.time, tFrozen, 'rehber açıkken simülasyon dondu');
+key('escape');
+assert.strictEqual(state.guideOpen, false, 'rehber kapandı');
 
 // Kayıt yazımı
 winHandlers.beforeunload();

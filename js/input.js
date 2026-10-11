@@ -10,7 +10,8 @@ const DIRS = {
 
 const heldOrder = [];   // basılma sırasına göre yön tuşları
 let attackQueued = false;
-let onExtra = null;     // { onDebug, onRespawn } — main tarafından bağlanır
+const skillQueue = [];  // basılan yetenek slotları (1/2/3)
+let onExtra = null;     // { onDebug, onRespawn, onGuide } — main tarafından bağlanır
 
 function norm(e) { return e.key.length === 1 ? e.key.toLowerCase() : e.key.toLowerCase(); }
 
@@ -28,6 +29,13 @@ export function initInput(extras) {
     } else if (k === ' ') {
       attackQueued = true;
       if (onExtra.onRespawn) onExtra.onRespawn();   // ölüm ekranında SPACE = yeniden doğ
+    } else if (k === '1' || k === '2' || k === '3') {
+      const slot = Number(k) - 1;
+      if (!skillQueue.includes(slot)) skillQueue.push(slot);
+    } else if (k === 'h') {
+      if (onExtra.onGuide) onExtra.onGuide();
+    } else if (k === 'escape') {
+      if (onExtra.onGuideClose) onExtra.onGuideClose();
     } else if (k === 'f1') {
       e.preventDefault();
       if (onExtra.onDebug) onExtra.onDebug();
@@ -58,4 +66,9 @@ export function consumeAttack() {
   const v = attackQueued;
   attackQueued = false;
   return v;
+}
+
+// Sıradaki yetenek slotunu döndürür (yoksa null)
+export function consumeSkill() {
+  return skillQueue.length ? skillQueue.shift() : null;
 }

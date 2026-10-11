@@ -11,11 +11,50 @@ export const ENEMY_TYPES = {
   troll:  { name: 'Troll',  glyph: 'T', color: '#ff5040', hp: 60, dmg: 8, xp: 50, speed: 2.0, elite: true },
 };
 
+// Çok karakterli ASCII sprite'lar — satır satır diziler + karakter başına renk.
+// Çizimde alt satır entity hücresine gelecek şekilde yerleştirilir.
+export const ENEMY_SPRITES = {
+  goblin: {
+    w: 3, h: 2,
+    rows: ['^,^', '<o>'],
+    colors: [
+      ['#8fd44a', '#6db832', '#8fd44a'],
+      ['#a4e34a', '#3a4a1a', '#a4e34a'],
+    ],
+  },
+  wolf: {
+    w: 4, h: 2,
+    rows: [' ,. ', '<o=='],
+    colors: [
+      ['#b8b8b8', '#d8d8d8', '#d8d8d8', '#b8b8b8'],
+      ['#d8d8d8', '#3a3a3a', '#c8c8c8', '#c8c8c8'],
+    ],
+  },
+  slime: {
+    w: 3, h: 2,
+    rows: [' _ ', '(*)'],
+    colors: [
+      ['#ea90f2', '#d877e0', '#ea90f2'],
+      ['#d877e0', '#ffd0ff', '#d877e0'],
+    ],
+  },
+  troll: {
+    w: 5, h: 3,
+    rows: [' ,^, ', '[o o]', '/###\\'],
+    colors: [
+      ['#3d6a26', '#568a2c', '#3d6a26', '#568a2c', '#3d6a26'],
+      ['#6a9f3d', '#ff5040', '#6a9f3d', '#ff5040', '#6a9f3d'],
+      ['#568a2c', '#4a7a28', '#4a7a28', '#4a7a28', '#568a2c'],
+    ],
+  },
+};
+
 export function makeEnemy(typeKey, x, y, level) {
   const t = ENEMY_TYPES[typeKey];
   const e = makeEntity('enemy', x, y, t.glyph, t.color);
   e.typeKey = typeKey;
   e.typeName = t.name;
+  e.sprite = ENEMY_SPRITES[typeKey];
   e.level = level;
   const bandMult = 1 + 0.30 * Math.max(0, level - 1);
   e.maxHp = Math.round(t.hp * bandMult);
@@ -30,6 +69,7 @@ export function makeEnemy(typeKey, x, y, level) {
   e.state = 'idle';
   e.atkCd = 0;
   e.thinkCd = Math.random();
+  e.stunT = 0;
   return e;
 }
 
@@ -48,6 +88,10 @@ function stepToward(e, tx, ty, occupied) {
 
 export function updateEnemy(e, state, dt) {
   e.atkCd = Math.max(0, e.atkCd - dt);
+  if (e.stunT > 0) {
+    e.stunT = Math.max(0, e.stunT - dt);
+    return;   // sersem — ne düşünür ne vurur
+  }
   const p = state.player;
   const dx = p.x - e.x, dy = p.y - e.y;
   const dist = Math.abs(dx) + Math.abs(dy);

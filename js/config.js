@@ -41,6 +41,16 @@ export const CONFIG = {
     critMult: 2,
   },
 
+  // Yetenekler — slot 1/2/3 tuşları. unlockLvl: o seviyede açılır.
+  SKILLS: [
+    { name: 'Kalkan Darbesi', key: '1', cd: 8, dmg: 4, stun: 2.0, unlockLvl: 2,
+      desc: 'Önündeki düşmanlara vurur ve 2 sn sersemletir.' },
+    { name: 'Kasırga Kılıç', key: '2', cd: 12, dmgMult: 1.0, unlockLvl: 3,
+      desc: 'Etrafındaki 8 yöne aynı anda savurur.' },
+    { name: 'Savaş Narası', key: '3', cd: 25, dur: 8, dmgBonus: 0.5, unlockLvl: 5,
+      desc: '8 sn boyunca kılıç hasarı +%50.' },
+  ],
+
   ENEMY: {
     aggroR: 7,
     leash: 12,

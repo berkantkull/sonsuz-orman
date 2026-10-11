@@ -5,6 +5,7 @@
 import { CONFIG } from './config.js';
 import { PORTRAIT, START_LOGO, DEATH_LOGO } from './sprites.js';
 import { ensureChunk } from './world.js';
+import { ENEMY_SPRITES, ENEMY_TYPES } from './enemy.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -23,6 +24,9 @@ export class UI {
       death: $('overlay-death'), deathLogo: $('death-logo'), deathInfo: $('death-info'),
       btnRespawn: $('btn-respawn'), resetSave: $('reset-save'),
       debug: $('debug'),
+      skills: Array.from(document.querySelectorAll('.skill')),
+      questName: $('quest-name'), questProg: $('quest-progress'),
+      guide: $('overlay-guide'), btnGuideClose: $('btn-guide-close'), btnGuide: $('btn-guide'),
     };
     this.cache = {};
     this.lastFrameKey = '';
@@ -32,6 +36,36 @@ export class UI {
     this.el.startLogo.textContent = START_LOGO.join('\n');
     this.el.deathLogo.textContent = DEATH_LOGO.join('\n');
     this.initPortrait();
+    this.fillGuideEnemies();
+
+    // Yetenek çubuğu etiketleri config'ten
+    this.el.skills.forEach((el, i) => {
+      const def = CONFIG.SKILLS[i];
+      if (!def) return;
+      el.querySelector('.skill-name').textContent = def.name;
+      el.querySelector('.skill-key').textContent = def.key;
+      el.title = `${def.name} — ${def.desc} (${def.unlockLvl}. seviyede açılır)`;
+    });
+  }
+
+  // Rehberdeki düşler listesine sprite'ları doldur
+  fillGuideEnemies() {
+    const notes = {
+      goblin: 'Hızlı ve sinirli ama gevişik. Yeni şövalyelerin ilk sınavı.',
+      wolf: 'Sürüyle gezer, çok hızlı koşar. Kalkan darbesiyle durdur.',
+      slime: 'Yavaş ama dayanıklı; vurduğunda az hasar verir, ısrarcıdır.',
+      troll: 'DERİN ORMAN (band 3+). Ağır vurur, çok canı var. Tek başına girme.',
+    };
+    document.querySelectorAll('.enemy-row').forEach((row) => {
+      const type = row.dataset.type;
+      const sp = ENEMY_SPRITES[type];
+      const pre = row.querySelector('pre');
+      if (sp && pre) pre.textContent = sp.rows.join('\n');
+      const note = row.querySelector('.enemy-note');
+      if (note && notes[type]) note.textContent = notes[type];
+      const name = row.querySelector('.enemy-name');
+      if (name && ENEMY_TYPES[type]) name.textContent = ENEMY_TYPES[type].name;
+    });
   }
 
   async ready() { await document.fonts.ready; }
@@ -146,6 +180,49 @@ export class UI {
 
   setOnlineCount(n) {
     this.set(this.el.online, `Çevrimiçi: ${n}`, 'online');
+  }
+
+  // --- Yetenek çubuğu & görev kutusu ---
+
+  updateSkills(state) {
+    const p = state.player;
+    if (!p) return;
+    this.el.skills.forEach((el, i) => {
+      const def = CONFIG.SKILLS[i];
+      if (!def) return;
+      const locked = p.level < def.unlockLvl;
+      const cdFrac = p.skillCd[i] / def.cd;
+      el.classList.toggle('locked', locked);
+      el.classList.toggle('cooling', cdFrac > 0);
+      el.classList.toggle('active', i === 2 && p.buffT > 0);
+      const fill = el.querySelector('.skill-cd');
+      const h = Math.round(cdFrac * 100);
+      if (fill.dataset.h !== String(h)) {
+        fill.dataset.h = String(h);
+        fill.style.height = h + '%';
+      }
+      const lock = el.querySelector('.skill-lock');
+      if (lock) lock.textContent = locked ? 'Sv ' + def.unlockLvl : '';
+    });
+  }
+
+  setQuest(info) {
+    this.set(this.el.questName, info.name, 'questName');
+    this.set(this.el.questProg, `${info.desc} — ${info.prog}`, 'questProg');
+  }
+
+  // --- Rehber ---
+
+  bindGuide(onToggle, onClose) {
+    this.el.btnGuideClose.addEventListener('click', () => { this.el.btnGuideClose.blur(); onClose(); });
+    this.el.btnGuide.addEventListener('click', () => { this.el.btnGuide.blur(); onToggle(); });
+    document.querySelectorAll('.open-guide').forEach((a) => {
+      a.addEventListener('click', (e) => { e.preventDefault(); onToggle(); });
+    });
+  }
+
+  showGuide(open) {
+    this.el.guide.classList.toggle('hidden', !open);
   }
 
   // --- Sohbet ---

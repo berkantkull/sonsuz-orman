@@ -4,12 +4,13 @@
 
 import { CONFIG } from './config.js';
 import { Renderer } from './renderer.js';
-import { initInput, getMoveIntent, consumeAttack } from './input.js';
+import { initInput, getMoveIntent, consumeAttack, consumeSkill } from './input.js';
 import { makeEntity, tryMove, updateMovement, updateSpawns, pruneEnemies, cellKey } from './entities.js';
 import { updateEnemy } from './enemy.js';
 import { spawnRoster, updateNpc } from './npc.js';
-import { tryPlayerAttack, hurtPlayer, npcStrikeEnemy, updateCombatTimers, respawnPlayer } from './combat.js';
+import { tryPlayerAttack, trySkill, hurtPlayer, npcStrikeEnemy, updateCombatTimers, respawnPlayer, gainXp } from './combat.js';
 import { updateEffects, addEffect } from './effects.js';
+import { initQuests, onEnemyKilled, onLevelQuest, questInfo } from './quests.js';
 import * as chat from './chat.js';
 import { UI, setUiTime } from './ui.js';
 import * as audio from './audio.js';
@@ -32,6 +33,8 @@ export const state = {
   debug: false,
   muted: false,
   fps: 0,
+  shakeT: 0,
+  guideOpen: false,
 };
 
 const renderer = new Renderer(document.getElementById('game'));
@@ -44,9 +47,15 @@ Object.assign(state, {
   pushChat: (m) => ui.addChat(m),
   hurtPlayer: (e) => hurtPlayer(state, e),
   npcStrike: (n, e) => npcStrikeEnemy(state, n, e),
-  onPlayerLevelUp: () => chat.chatPlayerLevelUp(state, state.player.level),
+  onPlayerLevelUp: () => {
+    chat.chatPlayerLevelUp(state, state.player.level);
+    onLevelQuest(state, state.player.level);
+  },
   onPlayerDeath: (byName) => die(byName),
   onEliteKill: () => chat.chatEliteKill(state),
+  onEnemyKilled: (e) => onEnemyKilled(state, e),
+  gainXp: (n) => gainXp(state, n),
+  onQuestChanged: () => ui.setQuest(questInfo(state)),
   onNpcKill: (n, e) => chat.chatNpcKill(state, n, e.typeName),
   onNpcLevelUp: (n) => chat.chatNpcLevelUp(state, n),
   updateOnlineCount: () => {
@@ -71,6 +80,8 @@ function makePlayer(name, saved) {
   p.attackT = 0;
   p.attackAnimT = 0;
   p.hurtT = 0;
+  p.buffT = 0;
+  p.skillCd = [0, 0, 0];
   p.lastCombatT = -99;
   return p;
 }
@@ -88,6 +99,7 @@ function startGame(name, saved) {
   spawnRoster(state);
   chat.initChat(state);
   chat.chatWelcome(state);
+  initQuests(state);
   state.updateOnlineCount();
 
   ui.hideStart();
@@ -117,6 +129,7 @@ function update(dt) {
   state.playTime += dt;
   setUiTime(state.time);
   const p = state.player;
+  state.shakeT = Math.max(0, (state.shakeT || 0) - dt);
 
   if (state.phase === 'play') {
     const intent = getMoveIntent();
@@ -125,6 +138,8 @@ function update(dt) {
       else p.facing = intent;
     }
     if (consumeAttack()) tryPlayerAttack(state);
+    let slot;
+    while ((slot = consumeSkill()) !== null) trySkill(state, slot);
   }
   const wasMoving = p.moveT < 1;
   updateMovement(p, dt);
@@ -187,15 +202,20 @@ function frame(now) {
   const dt = Math.min(Math.max(rawDt, 0), 0.10);
   acc += dt;
   let steps = 0;
-  while (acc >= STEP && steps < 8) {
-    update(STEP);
-    acc -= STEP;
-    steps++;
+  if (!state.guideOpen) {
+    while (acc >= STEP && steps < 8) {
+      update(STEP);
+      acc -= STEP;
+      steps++;
+    }
+  } else {
+    acc = 0;   // rehber açıkken simülasyon donar
   }
 
   renderer.render(state);
   ui.drawPortrait(state);
   ui.updateHUD(state);
+  ui.updateSkills(state);
   ui.updateMinimap(state, renderer, state.time);
   if (state.debug) {
     const p = state.player;
@@ -253,7 +273,19 @@ async function boot() {
       if (!state.debug) ui.setDebug(false);
     },
     onRespawn: respawn,
+    onGuide: () => {
+      state.guideOpen = !state.guideOpen;
+      ui.showGuide(state.guideOpen);
+    },
+    onGuideClose: () => {
+      state.guideOpen = false;
+      ui.showGuide(false);
+    },
   });
+  ui.bindGuide(
+    () => { state.guideOpen = !state.guideOpen; ui.showGuide(state.guideOpen); },
+    () => { state.guideOpen = false; ui.showGuide(false); },
+  );
 
   requestAnimationFrame(frame);
 }

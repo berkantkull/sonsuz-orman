@@ -90,6 +90,7 @@ function spawnChunkEnemies(state, cx, cy) {
   for (let i = 0; i < count; i++) {
     const lx = Math.floor(rand() * size), ly = Math.floor(rand() * size);
     const x = cx * size + lx, y = cy * size + ly;
+    if (Math.hypot(x, y) < CONFIG.NO_ENEMY_RADIUS) continue;   // spawn bölgesi düşmansız
     spawnEnemyAt(state, x, y, bandType(rand, band), 1 + band + Math.floor(rand() * 2));
   }
 }
@@ -97,7 +98,6 @@ function spawnChunkEnemies(state, cx, cy) {
 export function spawnEnemyAt(state, x, y, type, level) {
   if (!isPassable(x, y)) return null;
   if (state.occupied.has(cellKey(x, y))) return null;
-  if (Math.hypot(x, y) < CONFIG.NO_ENEMY_RADIUS) return null;   // spawn bölgesi düşmansız
   const e = makeEnemy(type, x, y, level);
   state.enemies.push(e);
   state.occupied.set(cellKey(x, y), e);

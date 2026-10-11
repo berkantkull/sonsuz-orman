@@ -10,20 +10,12 @@ export function tryPlayerAttack(state) {
   p.attackT = CONFIG.PLAYER.atkLock;
   p.attackAnimT = 0.28;   // portre animasyonu (3 kare x ~80ms)
 
-  const [dx, dy] = p.facing;
-  const perpX = dy, perpY = -dx;
-  const cells = [];
-  for (const i of [-1, 0, 1]) {
-    cells.push([p.x + dx + perpX * i, p.y + dy + perpY * i]);
-  }
+  const cells = frontArc(p);
   state.addEffect({ type: 'slash', cells, chars: ['\\', '|', '/'], t: 0, dur: 0.18 });
   state.playSound('swing');
 
-  for (const [cx, cy] of cells) {
-    const target = state.occupied.get(cellKey(cx, cy));
-    if (target && target.kind === 'enemy' && target.hp > 0) {
-      hitEnemy(state, target);
-    }
+  for (const e of enemiesInCells(state, cells)) {
+    hitEnemy(state, e);
   }
 }
 
@@ -32,8 +24,10 @@ function hitEnemy(state, e) {
   let dmg = CONFIG.PLAYER.baseDmg + p.level + Math.floor(Math.random() * 4);
   const crit = Math.random() < CONFIG.PLAYER.critChance;
   if (crit) dmg = Math.round(dmg * CONFIG.PLAYER.critMult);
+  if (p.buffT > 0) dmg = Math.round(dmg * (1 + CONFIG.SKILLS[2].dmgBonus));
   applyDamage(state, e, dmg, crit, CONFIG.COLORS.dmgPlayer);
   e.state = 'chase';   // vurulan düşman uyanır
+  if (crit) state.shakeT = Math.max(state.shakeT || 0, 0.12);
   state.playSound(crit ? 'crit' : 'hit');
   if (e.hp <= 0) killEnemyByPlayer(state, e);
 }
@@ -73,9 +67,12 @@ function killEnemyByPlayer(state, e) {
   state.occupied.delete(cellKey(e.x, e.y));
   scheduleRespawn(e, state.time);
   state.addEffect({ type: 'star', x: e.x, y: e.y, t: 0, dur: 0.3 });
+  // Ceset kalıntısı: soluklaşarak kaybolan %
+  state.addEffect({ type: 'dmg', x: e.x, y: e.y, t: 0, dur: 2.2, text: '%', color: '#a05848', rise: 0.15 });
   state.player.kills++;
   gainXp(state, e.xpValue + e.level * 2);
   state.playSound('kill');
+  state.onEnemyKilled(e);
   if (e.elite) state.onEliteKill(e.typeName);
   pruneFromList(state, e);
 }
@@ -107,6 +104,7 @@ export function hurtPlayer(state, e) {
   p.hp -= dmg;
   p.hurtT = 0.3;
   p.lastCombatT = state.time;
+  state.shakeT = 0.22;
   state.addEffect({ type: 'dmg', x: p.x, y: p.y, t: 0, dur: 0.7, text: '-' + dmg, color: CONFIG.COLORS.dmgEnemy });
   state.playSound('hurt');
   if (p.hp <= 0) {
@@ -115,11 +113,87 @@ export function hurtPlayer(state, e) {
   }
 }
 
+// --- Yetenekler ---
+
+// Bakılan yönün 3 ön hücresi (temel saldırı ve Kalkan Darbesi ortak kullanır)
+function frontArc(p) {
+  const [dx, dy] = p.facing;
+  const perpX = dy, perpY = -dx;
+  return [-1, 0, 1].map(i => [p.x + dx + perpX * i, p.y + dy + perpY * i]);
+}
+
+function enemiesInCells(state, cells) {
+  const out = [];
+  for (const [cx, cy] of cells) {
+    const t = state.occupied.get(cellKey(cx, cy));
+    if (t && t.kind === 'enemy' && t.hp > 0) out.push(t);
+  }
+  return out;
+}
+
+export function trySkill(state, slot) {
+  const p = state.player;
+  if (state.phase !== 'play' || p.hp <= 0) return;
+  const def = CONFIG.SKILLS[slot];
+  if (p.level < def.unlockLvl) {
+    state.pushChat({ from: null, text: `${def.name} ${def.unlockLvl}. seviyede açılır.`, kind: 'sys' });
+    return;
+  }
+  if (p.skillCd[slot] > 0) return;
+  p.skillCd[slot] = def.cd;
+  p.attackAnimT = 0.28;
+
+  if (slot === 0) {
+    // Kalkan Darbesi: ön yay + sersemletme
+    const cells = frontArc(p);
+    state.addEffect({ type: 'slash', cells, chars: ['\\', '|', '/'], t: 0, dur: 0.22 });
+    state.shakeT = Math.max(state.shakeT || 0, 0.15);
+    state.playSound('crit');
+    for (const e of enemiesInCells(state, cells)) {
+      const dmg = def.dmg + p.level * 2;
+      applyDamage(state, e, dmg, false, CONFIG.COLORS.dmgPlayer);
+      e.stunT = def.stun;
+      e.state = 'idle';
+      state.addEffect({ type: 'dmg', x: e.x, y: e.y - 0.6, t: 0, dur: 0.9, text: '* sersem *', color: '#7ff0f0', rise: 0.4 });
+      if (e.hp <= 0) killEnemyByPlayer(state, e);
+    }
+  } else if (slot === 1) {
+    // Kasırga Kılıç: çevredeki 8 hücre
+    const cells = [];
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx !== 0 || dy !== 0) cells.push([p.x + dx, p.y + dy]);
+      }
+    }
+    state.addEffect({ type: 'slash', cells, chars: ['\\', '*', '/'], t: 0, dur: 0.3 });
+    state.shakeT = Math.max(state.shakeT || 0, 0.2);
+    state.playSound('swing');
+    state.playSound('crit');
+    for (const e of enemiesInCells(state, cells)) {
+      let dmg = (CONFIG.PLAYER.baseDmg + p.level) * def.dmgMult + Math.floor(Math.random() * 4);
+      if (p.buffT > 0) dmg = Math.round(dmg * (1 + CONFIG.SKILLS[2].dmgBonus));
+      applyDamage(state, e, Math.round(dmg), false, CONFIG.COLORS.dmgPlayer);
+      e.state = 'chase';
+      if (e.hp <= 0) killEnemyByPlayer(state, e);
+    }
+  } else if (slot === 2) {
+    // Savaş Narası: 8 sn hasar buff'ı
+    p.buffT = def.dur;
+    state.addEffect({ type: 'ring', x: p.x, y: p.y, t: 0, dur: 1.0, color: CONFIG.COLORS.ringGold });
+    state.playSound('level');
+    state.pushChat({ from: null, text: `${p.name} Savaş Narası attı! (+%50 hasar, 8 sn)`, kind: 'sys' });
+  }
+}
+
 export function updateCombatTimers(state, dt) {
   const p = state.player;
   p.attackT = Math.max(0, p.attackT - dt);
   p.attackAnimT = Math.max(0, (p.attackAnimT || 0) - dt);
   p.hurtT = Math.max(0, (p.hurtT || 0) - dt);
+  p.buffT = Math.max(0, (p.buffT || 0) - dt);
+  for (let i = 0; i < p.skillCd.length; i++) {
+    p.skillCd[i] = Math.max(0, p.skillCd[i] - dt);
+  }
   if (p.hp > 0 && p.hp < p.maxHp && state.time - p.lastCombatT > CONFIG.REGEN.delay) {
     p.regenAcc = (p.regenAcc || 0) + dt * CONFIG.REGEN.rate;
     if (p.regenAcc >= 1) {

@@ -116,6 +116,13 @@ export class Renderer {
     this.camY = state.camera.y - rows / 2;
     const time = state.time;
 
+    // Ekran sarsıntısı: hasar yediğinde / kritik vurduğunda kısa titreşim
+    if (state.shakeT > 0) {
+      const amp = state.shakeT * 1.1;
+      this.camX += (Math.random() - 0.5) * amp;
+      this.camY += (Math.random() - 0.5) * amp;
+    }
+
     ctx.fillStyle = CONFIG.COLORS.bg;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -168,8 +175,12 @@ export class Renderer {
       ctx.fillRect(this.sx(p.px), this.sy(p.py), this.cw, this.chh);
     }
 
-    // 4) Entity glifleri
+    // 4) Entity glifleri / sprite'ları
     for (const e of vis) {
+      if (e.kind === 'enemy' && e.sprite) {
+        this.drawEnemySprite(ctx, e, time);
+        continue;
+      }
       const color = e === p
         ? (p.hurtT > 0 ? '#ff6a5e' : (time % 0.8 < 0.4 ? CONFIG.COLORS.player : '#e8b23a'))
         : e.color;
@@ -225,13 +236,36 @@ export class Renderer {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     for (const e of vis) {
+      const lift = e.kind === 'enemy' && e.sprite ? e.sprite.h - 1 : 0;
       if (e.kind === 'npc') {
         this.drawLabel(ctx, e.name, CONFIG.COLORS.labelNpc, e.px, e.py);
       } else if (e.kind === 'enemy' && time - e.lastHitT < 3) {
-        this.drawLabel(ctx, e.typeName + ' ' + e.level, CONFIG.COLORS.labelEnemy, e.px, e.py);
+        this.drawLabel(ctx, e.typeName + ' ' + e.level, CONFIG.COLORS.labelEnemy, e.px, e.py - lift);
       }
     }
     ctx.textAlign = 'left';
+  }
+
+  // Çok karakterli düşman sprite'ı: alt satır entity hücresine oturur.
+  // Vuruş anında tüm karakterler beyaz flaşlanır; sersemken tepesinde yıldız döner.
+  drawEnemySprite(ctx, e, time) {
+    const sp = e.sprite;
+    const flash = time - e.lastHitT < 0.12;
+    const bx = Math.round(e.px) - Math.floor(sp.w / 2);
+    const by = Math.round(e.py) - (sp.h - 1);
+    for (let r = 0; r < sp.h; r++) {
+      for (let c = 0; c < sp.w; c++) {
+        const ch = sp.rows[r][c];
+        if (ch === ' ') continue;
+        const color = flash ? '#ffffff' : sp.colors[r][c];
+        ctx.drawImage(this.glyph(ch, color, 'rgba(6, 10, 6, 0.5)'),
+          this.sx(bx + c), this.sy(by + r));
+      }
+    }
+    if (e.stunT > 0 && Math.floor(time * 4) % 2 === 0) {
+      ctx.drawImage(this.glyph('*', '#7ff0f0', 'rgba(6,10,6,0.5)'),
+        this.sx(bx + Math.floor(sp.w / 2)), this.sy(by - 1));
+    }
   }
 
   drawLabel(ctx, text, color, px, py) {

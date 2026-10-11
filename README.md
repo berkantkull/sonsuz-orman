@@ -18,6 +18,15 @@ https://berkantkull.github.io/sonsuz-orman/
   cache'i — 100×40 hücrelik grid 60fps'te akar.
 - **Gerçek zamanlı dövüş**: WASD/ok ile hareket, SPACE ile üç hücrelik yay
   şeklinde kılıç savurması, kritik vuruşlar, uçan hasar sayıları.
+- **Yetenekler**: 1 — Kalkan Darbesi (sersemletme), 2 — Kasırga Kılıç
+  (çevre hasarı), 3 — Savaş Narası (hasar buff'ı). Seviyeyle açılır,
+  HUD'da bekleme süreli yetenek çubuğu.
+- **Görevler**: Ardışık görev zinciri (İlk Kan → ... → Ormanın Koruyucusu),
+  yan panelde canlı görev takibi, tamamlanınca XP ödülü.
+- **ASCII düşman sprite'ları**: Harf yerine çok karakterli mini sanat —
+  kulaklı goblin, kurt profili, parlak çekirdekli slime, boynuzlu troll.
+- **Oyun rehberi**: H tuşu — amaç, kontroller, yetenekler, düşman tanıtımı
+  ve ipuçları (rehber açıkken oyun duraklar).
 - **RPG sistemi**: XP, seviye atlama, savaş dışı rejenerasyon, ölüm cezası
   ve spawn'da yeniden doğma.
 - **Simüle MMO**: İsimli sahte şövalyeler ormanda gezer, Türkçe sohbet akar,
