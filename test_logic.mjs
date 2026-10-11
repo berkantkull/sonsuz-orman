@@ -33,10 +33,20 @@ console.log('world OK — uzak bölge tile dağılımı:', counts);
 
 // 3) entities + enemy + combat + chat import zinciri (dairesel import dahil)
 await import('./js/entities.js');
-const { ENEMY_TYPES, makeEnemy } = await import('./js/enemy.js');
+const { ENEMY_TYPES, ENEMY_SPRITES, makeEnemy } = await import('./js/enemy.js');
 const e = makeEnemy('goblin', 5, 5, 3);
 assert.strictEqual(e.hp, e.maxHp, 'düşman dolu hp doğar');
 assert.ok(e.maxHp > ENEMY_TYPES.goblin.hp, 'bant çarpanı hp artırır (lvl 3)');
+// sprite verisi tutarlı mı (boyutlar, renk ızgarası, plaka)
+for (const [k, sp] of Object.entries(ENEMY_SPRITES)) {
+  assert.strictEqual(sp.rows.length, sp.h, `${k} satır sayısı`);
+  assert.strictEqual(sp.colors.length, sp.h, `${k} renk satır sayısı`);
+  sp.rows.forEach((row, i) => {
+    assert.strictEqual(row.length, sp.w, `${k} satır ${i} genişliği`);
+    assert.strictEqual(sp.colors[i].length, sp.w, `${k} renk ${i} genişliği`);
+  });
+  assert.ok(typeof sp.plate === 'string', `${k} plaka rengi tanımlı`);
+}
 console.log('entities/enemy OK');
 
 // 4) npc isim üretimi

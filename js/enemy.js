@@ -13,39 +13,46 @@ export const ENEMY_TYPES = {
 
 // Çok karakterli ASCII sprite'lar — satır satır diziler + karakter başına renk.
 // Çizimde alt satır entity hücresine gelecek şekilde yerleştirilir.
+// plate: sprite altına çizilen opak zemin rengi — terrain'den keskin ayrım için.
 export const ENEMY_SPRITES = {
   goblin: {
-    w: 3, h: 2,
-    rows: ['^,^', '<o>'],
+    w: 3, h: 3,
+    rows: ['^,^', '<o>', '/ \\'],
     colors: [
-      ['#8fd44a', '#6db832', '#8fd44a'],
-      ['#a4e34a', '#3a4a1a', '#a4e34a'],
+      ['#b8e83e', '#9cd02e', '#b8e83e'],
+      ['#d3ff5e', '#1c260c', '#d3ff5e'],
+      ['#b8e83e', '#0d1a06', '#b8e83e'],
     ],
+    plate: 'rgba(24, 44, 8, 0.85)',
   },
   wolf: {
-    w: 4, h: 2,
-    rows: [' ,. ', '<o=='],
+    w: 4, h: 3,
+    rows: [' ,. ', '<o==', ' || '],
     colors: [
-      ['#b8b8b8', '#d8d8d8', '#d8d8d8', '#b8b8b8'],
-      ['#d8d8d8', '#3a3a3a', '#c8c8c8', '#c8c8c8'],
+      ['#e8e8e8', '#ffffff', '#e8e8e8', '#d0d0d0'],
+      ['#ffffff', '#c02020', '#ececec', '#e0e0e0'],
+      ['#d0d0d0', '#a8a8a8', '#a8a8a8', '#d0d0d0'],
     ],
+    plate: 'rgba(36, 40, 46, 0.85)',
   },
   slime: {
     w: 3, h: 2,
     rows: [' _ ', '(*)'],
     colors: [
-      ['#ea90f2', '#d877e0', '#ea90f2'],
-      ['#d877e0', '#ffd0ff', '#d877e0'],
+      ['#f56bff', '#e040e8', '#f56bff'],
+      ['#e040e8', '#ffe0ff', '#e040e8'],
     ],
+    plate: 'rgba(48, 8, 52, 0.85)',
   },
   troll: {
     w: 5, h: 3,
     rows: [' ,^, ', '[o o]', '/###\\'],
     colors: [
-      ['#3d6a26', '#568a2c', '#3d6a26', '#568a2c', '#3d6a26'],
-      ['#6a9f3d', '#ff5040', '#6a9f3d', '#ff5040', '#6a9f3d'],
-      ['#568a2c', '#4a7a28', '#4a7a28', '#4a7a28', '#568a2c'],
+      ['#4a8a2a', '#6fbf30', '#4a8a2a', '#6fbf30', '#4a8a2a'],
+      ['#7dc93f', '#ff3020', '#7dc93f', '#ff3020', '#7dc93f'],
+      ['#6fbf30', '#5aa824', '#5aa824', '#5aa824', '#6fbf30'],
     ],
+    plate: 'rgba(48, 26, 8, 0.85)',
   },
 };
 

@@ -64,8 +64,9 @@ export class Renderer {
   }
 
   // Glif: karakter + ön plan + (isteğe bağlı) dolu arka plan.
-  glyph(ch, fg, bg) {
-    const k = ch + '|' + fg + '|' + (bg || '');
+  // bold: kalın kontur — entity'lerin terrain içinde kaybolmasını önler.
+  glyph(ch, fg, bg, bold) {
+    const k = ch + '|' + fg + '|' + (bg || '') + (bold ? '|b' : '');
     let g = this.glyphs.get(k);
     if (!g) {
       g = document.createElement('canvas');
@@ -80,6 +81,12 @@ export class Renderer {
         c.font = `${Math.round(CONFIG.FONT_SIZE * this.dpr)}px ${CONFIG.FONT_STACK}`;
         c.textAlign = 'center';
         c.textBaseline = 'middle';
+        if (bold) {
+          c.lineJoin = 'round';
+          c.lineWidth = Math.max(2, Math.round(1.6 * this.dpr));
+          c.strokeStyle = fg;
+          c.strokeText(ch, this.cw / 2, this.chh / 2 + this.dpr);
+        }
         c.fillStyle = fg;
         c.fillText(ch, this.cw / 2, this.chh / 2 + this.dpr);
       }
@@ -184,7 +191,7 @@ export class Renderer {
       const color = e === p
         ? (p.hurtT > 0 ? '#ff6a5e' : (time % 0.8 < 0.4 ? CONFIG.COLORS.player : '#e8b23a'))
         : e.color;
-      ctx.drawImage(this.glyph(e.glyph, color, e.glyphBg), this.sx(e.px), this.sy(e.py));
+      ctx.drawImage(this.glyph(e.glyph, color, e.glyphBg, true), this.sx(e.px), this.sy(e.py));
     }
 
     // 5) Efektler: slash flaşları, isabet yıldızları, hasar sayıları, halkalar
@@ -247,24 +254,34 @@ export class Renderer {
   }
 
   // Çok karakterli düşman sprite'ı: alt satır entity hücresine oturur.
-  // Vuruş anında tüm karakterler beyaz flaşlanır; sersemken tepesinde yıldız döner.
+  // Altına tür renkli opak plaka çizilir (terrain'den ayrım), karakterler
+  // kalın konturludur. Vuruş anında beyaz flaş; sersemken yıldız, kovalarken '!'
   drawEnemySprite(ctx, e, time) {
     const sp = e.sprite;
     const flash = time - e.lastHitT < 0.12;
     const bx = Math.round(e.px) - Math.floor(sp.w / 2);
     const by = Math.round(e.py) - (sp.h - 1);
+
+    ctx.fillStyle = sp.plate || 'rgba(8, 14, 8, 0.85)';
+    ctx.fillRect(this.sx(bx), this.sy(by), sp.w * this.cw, sp.h * this.chh);
+
     for (let r = 0; r < sp.h; r++) {
       for (let c = 0; c < sp.w; c++) {
         const ch = sp.rows[r][c];
         if (ch === ' ') continue;
         const color = flash ? '#ffffff' : sp.colors[r][c];
-        ctx.drawImage(this.glyph(ch, color, 'rgba(6, 10, 6, 0.5)'),
+        ctx.drawImage(this.glyph(ch, color, null, true),
           this.sx(bx + c), this.sy(by + r));
       }
     }
-    if (e.stunT > 0 && Math.floor(time * 4) % 2 === 0) {
-      ctx.drawImage(this.glyph('*', '#7ff0f0', 'rgba(6,10,6,0.5)'),
-        this.sx(bx + Math.floor(sp.w / 2)), this.sy(by - 1));
+
+    const cx = bx + Math.floor(sp.w / 2);
+    if (e.stunT > 0) {
+      ctx.drawImage(this.glyph('*', '#7ff0f0', 'rgba(10, 20, 24, 0.9)', true),
+        this.sx(cx), this.sy(by - 1));
+    } else if (e.state === 'chase' || e.state === 'attack') {
+      ctx.drawImage(this.glyph('!', '#ff5040', 'rgba(30, 8, 8, 0.9)', true),
+        this.sx(cx), this.sy(by - 1));
     }
   }
 
